@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shoe Store</title>
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
     <header style="background: #333; color: #fff; padding: 15px;">
