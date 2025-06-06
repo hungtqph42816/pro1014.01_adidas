@@ -1,0 +1,23 @@
+HTTrack3.49-2+htsswf+htsjava launched on Thu, 29 May 2025 22:24:32 at https://htmldemo.net/james/james/index.html +*.png +*.gif +*.jpg +*.jpeg +*.css +*.js -ad.doubleclick.net/* -mime:application/foobar
+(winhttrack -qwC2%Ps2u1%s%uN0%I0p3DaK0H0%kf2A25000%f#f -F "Mozilla/4.5 (compatible; HTTrack 3.0x; Windows 98)" -%F "<!-- Mirrored from %s%s by HTTrack Website Copier/3.x [XR&CO'2014], %s -->" -%l "en, *" https://htmldemo.net/james/james/index.html -O1 "D:\fe1" +*.png +*.gif +*.jpg +*.jpeg +*.css +*.js -ad.doubleclick.net/* -mime:application/foobar )
+
+Information, Warnings and Errors reported for this mirror:
+note:	the hts-log.txt file, and hts-cache folder, may contain sensitive information,
+	such as username/password authentication for websites mirrored in this project
+	do not share these files/folders if you want these information to remain private
+
+22:25:37	Error: 	"Not Found" (404) at link https://htmldemo.net/james/james/css/grabbing.png (from https://htmldemo.net/james/james/css/owl.carousel.css)
+22:25:37	Error: 	"Not Found" (404) at link https://htmldemo.net/james/james/css/AjaxLoader.gif (from https://htmldemo.net/james/james/css/owl.theme.css)
+22:25:37	Error: 	"Not Found" (404) at link https://htmldemo.net/james/james/css/images/ui-bg_glass_75_dadada_1x400.png (from https://htmldemo.net/james/james/css/jquery-ui.css)
+22:25:37	Error: 	"Not Found" (404) at link https://htmldemo.net/james/james/css/images/ui-bg_glass_65_ffffff_1x400.png (from https://htmldemo.net/james/james/css/jquery-ui.css)
+22:25:37	Error: 	"Not Found" (404) at link https://htmldemo.net/james/james/css/images/ui-bg_glass_55_fbf9ee_1x400.png (from https://htmldemo.net/james/james/css/jquery-ui.css)
+22:25:37	Error: 	"Not Found" (404) at link https://htmldemo.net/james/james/css/images/ui-bg_glass_95_fef1ec_1x400.png (from https://htmldemo.net/james/james/css/jquery-ui.css)
+22:25:37	Error: 	"Not Found" (404) at link https://htmldemo.net/james/james/css/images/ui-icons_222222_256x240.png (from https://htmldemo.net/james/james/css/jquery-ui.css)
+22:25:37	Error: 	"Not Found" (404) at link https://htmldemo.net/james/james/css/images/ui-icons_888888_256x240.png (from https://htmldemo.net/james/james/css/jquery-ui.css)
+22:25:37	Error: 	"Not Found" (404) at link https://htmldemo.net/james/james/css/images/ui-icons_454545_256x240.png (from https://htmldemo.net/james/james/css/jquery-ui.css)
+22:25:37	Error: 	"Not Found" (404) at link https://htmldemo.net/james/james/css/images/ui-icons_2e83ff_256x240.png (from https://htmldemo.net/james/james/css/jquery-ui.css)
+22:25:37	Error: 	"Not Found" (404) at link https://htmldemo.net/james/james/css/images/ui-icons_cd0a0a_256x240.png (from https://htmldemo.net/james/james/css/jquery-ui.css)
+22:25:37	Error: 	"Not Found" (404) at link https://htmldemo.net/james/james/css/images/ui-bg_flat_0_aaaaaa_40x100.png (from https://htmldemo.net/james/james/css/jquery-ui.css)
+
+HTTrack Website Copier/3.49-2 mirror complete in 1 minutes 5 seconds : 155 links scanned, 142 files written (13001583 bytes overall) [11053878 bytes received at 170059 bytes/sec], 2605738 bytes transferred using HTTP compression in 60 files, ratio 20%, 38.7 requests per connection
+(12 errors, 0 warnings, 0 messages)
