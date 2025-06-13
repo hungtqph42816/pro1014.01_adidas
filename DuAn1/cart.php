@@ -1,11 +1,31 @@
 <?php
+require_once 'config/db.php';
 session_start();
+$conn = connectDB();
 
-if (!isset($_SESSION['cart'])) {
-    $_SESSION['cart'] = [];
+if (isset($_GET['action']) && $_GET['action'] == 'add' && isset($_GET['id'])) {
+    $product_id = (int) $_GET['id'];
+
+    $stmt = $conn->prepare("SELECT * FROM products WHERE product_id = ?");
+    $stmt->execute([$product_id]);
+    $product = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($product) {
+        if (!isset($_SESSION['cart'][$product_id])) {
+            $_SESSION['cart'][$product_id] = [
+                'name' => $product['name'],
+                'price' => $product['price'],
+                'quantity' => 1
+            ];
+        } else {
+            $_SESSION['cart'][$product_id]['quantity']++;
+        }
+    }
+
+    header("Location: cart.php");
+    exit();
 }
 
-// Cập nhật số lượng
 if (isset($_POST['update'])) {
     foreach ($_POST['quantities'] as $id => $qty) {
         $_SESSION['cart'][$id]['quantity'] = max(1, intval($qty));
@@ -14,7 +34,6 @@ if (isset($_POST['update'])) {
     exit();
 }
 
-// Xóa sản phẩm
 if (isset($_GET['remove'])) {
     unset($_SESSION['cart'][$_GET['remove']]);
     header("Location: cart.php");

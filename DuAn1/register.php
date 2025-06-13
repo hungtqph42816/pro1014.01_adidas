@@ -1,5 +1,7 @@
 <?php
 require_once 'config/db.php';
+session_start();
+$conn = connectDB();
 $message = '';
 
 // Kiểm tra form gửi đi
@@ -13,24 +15,15 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
 
     // Kiểm tra email đã tồn tại chưa
     $check = $conn->prepare("SELECT * FROM user WHERE email = ?");
-    if (!$check) {
-        die("Lỗi prepare: " . $conn->error);
-    }
-    $check->bind_param("s", $email);
-    $check->execute();
-    $result = $check->get_result();
+    $check->execute([$email]);
+    $result = $check->fetch(PDO::FETCH_ASSOC);
 
-    if ($result->num_rows > 0) {
+    if ($result) {
         $message = "⚠️ Email đã được sử dụng!";
     } else {
         // Thêm người dùng mới
         $stmt = $conn->prepare("INSERT INTO user (name, email, password) VALUES (?, ?, ?)");
-        if (!$stmt) {
-            die("Lỗi prepare insert: " . $conn->error);
-        }
-        $stmt->bind_param("sss", $name, $email, $hashedPassword);
-
-        if ($stmt->execute()) {
+        if ($stmt->execute([$name, $email, $hashedPassword])) {
             header("Location: login.php");
             exit();
         } else {
@@ -39,13 +32,13 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng Ký</title>
-    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
     <div class="container">
@@ -63,4 +56,79 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
     </div>
 </body>
 </html>
+<style>
+    body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(to right, #4facfe, #00f2fe);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.container {
+    background: white;
+    padding: 40px 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+h2 {
+    margin-bottom: 25px;
+    color: #333;
+}
+
+form input {
+    width: 100%;
+    padding: 12px 0px;
+    margin: 10px 0;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    font-size: 15px;
+    transition: 0.3s ease;
+}
+
+form input:focus {
+    border-color: #4facfe;
+    outline: none;
+    box-shadow: 0 0 5px rgba(79, 172, 254, 0.5);
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    background-color: #4facfe;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+button:hover {
+    background-color: #00c6ff;
+}
+
+p {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #444;
+}
+
+a {
+    color: #4facfe;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+</style>
 
