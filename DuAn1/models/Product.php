@@ -1,17 +1,21 @@
 <?php
-require_once 'core/Database.php';
+require_once __DIR__ . '/../config/db.php'; // đường dẫn chính xác
 
 class Product {
-    public static function all() {
+    public static function getAll() {
+        $conn = connectDB(); // Lỗi ở đây nếu không require đúng
+
         $sql = "SELECT * FROM products";
-        $stmt = Database::connect()->query($sql);
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
-    public static function find($id) {
-        $sql = "SELECT * FROM products WHERE product_id = ?";
-        $stmt = Database::connect()->prepare($sql);
+    public function getProductById($id) {
+        $conn = connectDB();
+        $stmt = $conn->prepare("SELECT * FROM products WHERE product_id = ?");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }
+?>

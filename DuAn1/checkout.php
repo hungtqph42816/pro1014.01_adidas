@@ -1,40 +1,61 @@
 <?php
 session_start();
-include 'db_connect.php'; // Kết nối CSDL
+require_once 'config/db.php';
 
-if (isset($_POST['checkout'])) {
-    if (empty($_SESSION['cart'])) {
-        echo "Giỏ hàng trống. Không thể thanh toán!";
-        exit;
+$conn = connectDB();
+$cart = $_SESSION['cart'] ?? [];
+$totalAmount = 0;
+$success = false;
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['checkout'])) {
+    $conn->beginTransaction(); // Bắt đầu transaction
+    try {
+        // 1️⃣ Tạo đơn hàng
+        $stmt = $conn->prepare("INSERT INTO orders (order_date, total_amount) VALUES (NOW(), ?)");
+        $stmt->execute([$totalAmount]);
+        $orderId = $conn->lastInsertId();
+
+        foreach ($cart as $product_id => $item) {
+            $quantity = (int)$item['quantity'];
+
+            // Kiểm tra tồn kho
+            $stmt = $conn->prepare("SELECT stock_quantity FROM products WHERE product_id = ?");
+            $stmt->execute([$product_id]);
+            $product = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$product) {
+                throw new Exception("Sản phẩm không tồn tại (ID: $product_id).");
+            }
+
+            $stock = (int)$product['stock_quantity'];
+            if ($stock < $quantity) {
+                throw new Exception("Không đủ hàng cho sản phẩm \"{$item['name']}\".");
+            }
+
+            // Trừ tồn kho
+            $newStock = $stock - $quantity;
+            $update = $conn->prepare("UPDATE products SET stock_quantity = ? WHERE product_id = ?");
+            $update->execute([$newStock, $product_id]);
+
+            // 2️⃣ Thêm chi tiết đơn hàng
+            $insertItem = $conn->prepare("
+                INSERT INTO order_items (order_id, product_id, price, quantity) 
+                VALUES (?, ?, ?, ?)
+            ");
+            $insertItem->execute([$orderId, $product_id, $item['price'], $quantity]);
+        }
+
+        $conn->commit();
+        unset($_SESSION['cart']);
+        $success = true;
+
+    } catch (Exception $e) {
+        $conn->rollBack();
+        $error = $e->getMessage();
     }
-
-    $user_id = 1; // Tùy bạn, nếu có đăng nhập thì lấy từ $_SESSION
-    $total = 0;
-
-    foreach ($_SESSION['cart'] as $item) {
-        $total += $item['price'] * $item['quantity'];
-    }
-
-    // Lưu vào bảng orders
-    $stmt = $conn->prepare("INSERT INTO orders (user_id, total, created_at) VALUES (?, ?, NOW())");
-    $stmt->bind_param("id", $user_id, $total);
-    $stmt->execute();
-    $order_id = $stmt->insert_id;
-
-    // Lưu vào bảng order_items
-    $stmt_item = $conn->prepare("INSERT INTO order_items (order_id, product_id, price, quantity) VALUES (?, ?, ?, ?)");
-    foreach ($_SESSION['cart'] as $product_id => $item) {
-        $stmt_item->bind_param("iidi", $order_id, $product_id, $item['price'], $item['quantity']);
-        $stmt_item->execute();
-    }
-
-    // Xóa giỏ hàng
-    unset($_SESSION['cart']);
-
-    // Chuyển sang trang cảm ơn
-    header("Location: order_success.php?order_id=$order_id");
-    exit;
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -42,43 +63,149 @@ if (isset($_POST['checkout'])) {
 <head>
     <meta charset="UTF-8">
     <title>Thanh toán</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: #f7f7f7;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #27ae60;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+        }
+
+        td img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+
+        .total {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+
+        .btn, .checkout-btn {
+            background-color: #2ecc71;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            display: block;
+            margin: 20px auto 0;
+            text-align: center;
+        }
+
+        .btn:hover, .checkout-btn:hover {
+            background-color: #27ae60;
+        }
+
+        .success-message, .error-message {
+            background: #dff0d8;
+            color: #155724;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+            border: 1px solid #c3e6cb;
+            margin-bottom: 20px;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+    </style>
 </head>
 <body>
-    <h2>Thanh toán đơn hàng</h2>
-    <form method="post">
-        <table border="1" cellpadding="5" cellspacing="0">
-            <tr>
-                <th>Tên sản phẩm</th>
-                <th>Giá</th>
-                <th>Số lượng</th>
-                <th>Thành tiền</th>
-            </tr>
-            <?php
-            $total = 0;
-            if (!empty($_SESSION['cart'])) {
-                foreach ($_SESSION['cart'] as $item) {
-                    $subtotal = $item['price'] * $item['quantity'];
-                    $total += $subtotal;
-                    echo "<tr>
-                        <td>{$item['name']}</td>
-                        <td>" . number_format($item['price']) . " VND</td>
-                        <td>{$item['quantity']}</td>
-                        <td>" . number_format($subtotal) . " VND</td>
-                    </tr>";
-                }
-                echo "<tr>
-                    <td colspan='3'><strong>Tổng cộng</strong></td>
-                    <td><strong>" . number_format($total) . " VND</strong></td>
-                </tr>";
-            } else {
-                echo "<tr><td colspan='4'>Giỏ hàng trống</td></tr>";
-            }
-            ?>
-        </table>
-        <br>
-        <?php if (!empty($_SESSION['cart'])): ?>
-            <button type="submit" name="checkout">Thanh toán</button>
+    <div class="container">
+        <?php if ($success): ?>
+            <div class="success-message">
+                <h2>🎉 Thanh toán thành công!</h2>
+                <p>Cảm ơn bạn đã mua sắm tại cửa hàng của chúng tôi.</p>
+            </div>
+            <script>
+                setTimeout(() => {
+                    window.location.href = 'index.php';
+                }, 3000);
+            </script>
+
+        <?php elseif (!empty($error)): ?>
+            <div class="error-message">
+                <strong>Lỗi:</strong> <?= htmlspecialchars($error) ?>
+                <p><a class="btn" href="cart.php">Quay lại giỏ hàng</a></p>
+            </div>
+
+        <?php elseif (empty($cart)): ?>
+            <h2>🛒 Giỏ hàng trống!</h2>
+            <p><a href="index.php" class="btn">← Quay lại trang chủ</a></p>
+
+        <?php else: ?>
+            <h1>Thông tin đơn hàng</h1>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ảnh</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Giá</th>
+                        <th>Số lượng</th>
+                        <th>Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($cart as $item): 
+                        $itemTotal = $item['price'] * $item['quantity'];
+                        $totalAmount += $itemTotal;
+                    ?>
+                    <tr>
+                        <td>
+                            <img src="assets/image/<?= htmlspecialchars($item['image'] ?? 'no-image.png') ?>" 
+                                 alt="<?= htmlspecialchars($item['name'] ?? 'Sản phẩm') ?>">
+                        </td>
+                        <td><?= htmlspecialchars($item['name'] ?? '') ?></td>
+                        <td><?= number_format($item['price'], 0, ',', '.') ?> đ</td>
+                        <td><?= $item['quantity'] ?></td>
+                        <td><?= number_format($itemTotal, 0, ',', '.') ?> đ</td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <tr>
+                        <td colspan="4" class="total">Tổng cộng:</td>
+                        <td class="total"><?= number_format($totalAmount, 0, ',', '.') ?> đ</td>
+                    </tr>
+                </tbody>
+            </table>
+            <form method="POST">
+                <button type="submit" name="checkout" class="checkout-btn">Xác nhận thanh toán</button>
+            </form>
         <?php endif; ?>
-    </form>
+    </div>
 </body>
 </html>
