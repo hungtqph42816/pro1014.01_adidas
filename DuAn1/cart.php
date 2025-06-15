@@ -1,11 +1,31 @@
 <?php
+require_once 'config/db.php';
 session_start();
+$conn = connectDB();
 
-if (!isset($_SESSION['cart'])) {
-    $_SESSION['cart'] = [];
+if (isset($_GET['action']) && $_GET['action'] == 'add' && isset($_GET['id'])) {
+    $product_id = (int) $_GET['id'];
+
+    $stmt = $conn->prepare("SELECT * FROM products WHERE product_id = ?");
+    $stmt->execute([$product_id]);
+    $product = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($product) {
+        if (!isset($_SESSION['cart'][$product_id])) {
+            $_SESSION['cart'][$product_id] = [
+                'name' => $product['name'],
+                'price' => $product['price'],
+                'quantity' => 1
+            ];
+        } else {
+            $_SESSION['cart'][$product_id]['quantity']++;
+        }
+    }
+
+    header("Location: cart.php");
+    exit();
 }
 
-// Cập nhật số lượng
 if (isset($_POST['update'])) {
     foreach ($_POST['quantities'] as $id => $qty) {
         $_SESSION['cart'][$id]['quantity'] = max(1, intval($qty));
@@ -14,7 +34,6 @@ if (isset($_POST['update'])) {
     exit();
 }
 
-// Xóa sản phẩm
 if (isset($_GET['remove'])) {
     unset($_SESSION['cart'][$_GET['remove']]);
     header("Location: cart.php");
@@ -24,6 +43,7 @@ if (isset($_GET['remove'])) {
 
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <title>Giỏ Hàng</title>
@@ -34,56 +54,69 @@ if (isset($_GET['remove'])) {
             background-color: #f3f4f6;
             padding: 30px;
         }
+
         .cart-container {
             max-width: 900px;
             margin: auto;
             background: white;
             border-radius: 10px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
             padding: 30px;
         }
+
         h2 {
             margin-bottom: 20px;
             color: #333;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 25px;
         }
-        th, td {
+
+        th,
+        td {
             padding: 15px;
             text-align: left;
         }
+
         thead {
             background-color: #f9fafb;
             border-bottom: 2px solid #e5e7eb;
         }
+
         tbody tr {
             border-bottom: 1px solid #e5e7eb;
         }
+
         tbody tr:hover {
             background-color: #f1f5f9;
         }
+
         .quantity-input {
             width: 60px;
             padding: 5px;
             text-align: center;
         }
+
         .remove-btn {
             color: red;
             text-decoration: none;
         }
+
         .cart-total {
             text-align: right;
             font-weight: bold;
             font-size: 1.2rem;
         }
+
         .actions {
             display: flex;
             justify-content: space-between;
             gap: 15px;
         }
+
         .actions button,
         .actions a {
             padding: 10px 18px;
@@ -93,16 +126,19 @@ if (isset($_GET['remove'])) {
             font-weight: 500;
             text-decoration: none;
         }
+
         .update-btn {
             background-color: #3b82f6;
             color: white;
         }
+
         .checkout-btn {
             background-color: #10b981;
             color: white;
         }
     </style>
 </head>
+
 <body>
     <div class="cart-container">
         <h2>Giỏ Hàng Của Bạn</h2>
@@ -130,15 +166,15 @@ if (isset($_GET['remove'])) {
                             $subtotal = $price * $quantity;
                             $total += $subtotal;
                         ?>
-                        <tr>
-                            <td><?= htmlspecialchars($item['name']) ?></td>
-                            <td><?= number_format((float)$item['price']) ?> đ</td>
-                            <td>
-                                <input class="quantity-input" type="number" name="quantities[<?= $id ?>]" value="<?= $item['quantity'] ?>" min="1">
-                            </td>
-                            <td><?= number_format((float)$subtotal) ?> đ</td>
-                            <td><a class="remove-btn" href="?remove=<?= $id ?>">X</a></td>
-                        </tr>
+                            <tr>
+                                <td><?= htmlspecialchars($item['name']) ?></td>
+                                <td><?= number_format((float)$item['price']) ?> đ</td>
+                                <td>
+                                    <input class="quantity-input" type="number" name="quantities[<?= $id ?>]" value="<?= $item['quantity'] ?>" min="1">
+                                </td>
+                                <td><?= number_format((float)$subtotal) ?> đ</td>
+                                <td><a class="remove-btn" href="?remove=<?= $id ?>">X</a></td>
+                            </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
@@ -146,11 +182,14 @@ if (isset($_GET['remove'])) {
                 <div class="cart-total">Tổng cộng: <?= number_format((float)$total) ?> đ</div>
 
                 <div class="actions">
-                    <button class="update-btn" type="submit" name="update">Cập nhật</button>
-                    <a class="checkout-btn" href="checkout.php">Thanh toán</a>
+                    <button class="update-btn" type="button" onclick="window.location.href='index.php'">Cập nhật</button>
+                    <a href="checkout.php">
+                        <button type="button">Thanh toán</button>
+                    </a>
                 </div>
             </form>
         <?php endif; ?>
     </div>
 </body>
+
 </html>
