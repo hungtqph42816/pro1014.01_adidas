@@ -9,7 +9,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $name = trim($_POST['name']);
     $password = trim($_POST['password']);
 
-    // Chuẩn bị và thực thi truy vấn PDO
+    // Truy vấn người dùng theo tên
     $stmt = $conn->prepare("SELECT * FROM user WHERE name = ?");
     $stmt->execute([$name]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -18,7 +18,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION["user_id"] = $user["id"];
         $_SESSION["user_name"] = $user["name"];
         $_SESSION["user_role"] = $user["role"];
-        header("Location: index.php");
+
+        // Phân quyền: chuyển hướng
+        if ($user["role"] === 'admin') {
+            header("Location: admin/index.php");
+        } else {
+            header("Location: index.php");
+        }
         exit();
     } else {
         $message = "❌ Tên đăng nhập hoặc mật khẩu không đúng!";
@@ -60,7 +66,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         form input {
             width: 100%;
-            padding: 12px 0px;
+            padding: 12px 10px;
             margin: 10px 0;
             border: 2px solid #ccc;
             border-radius: 8px;
@@ -106,20 +112,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         a:hover {
             text-decoration: underline;
         }
+
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Đăng nhập</h2>
         <form method="POST">
-            <input type="text" name="name" placeholder="Tên đăng nhập" required><br>
-            <input type="password" name="password" placeholder="Mật khẩu" required><br>
+            <input type="text" name="name" placeholder="Tên đăng nhập" required>
+            <input type="password" name="password" placeholder="Mật khẩu" required>
             <button type="submit">Đăng nhập</button>
         </form>
+
         <?php if ($message): ?>
-            <p style="color:red;"><?php echo $message; ?></p>
+            <p class="error"><?= $message ?></p>
         <?php endif; ?>
-        <p>Chưa có tài khoản? <a href="register.php">Đăng Ký</a></p>
+
+        <p>Chưa có tài khoản? <a href="register.php">Đăng ký</a></p>
     </div>
 </body>
 </html>
